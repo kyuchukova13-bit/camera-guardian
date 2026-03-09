@@ -429,7 +429,7 @@
         }, 1000);
     }
 
-    // 6. ЙОГА НА СМЕХА
+   // 6. ЙОГА НА СМЕХА
     const laughFaces = [
         {c:'joy', t:"УСМИВКА ДО УШИТЕ! 😁"},
         {c:'tongue', t:"ПОКАЖИ ЕЗИК! ПЛЕЗЕНЕ! 😛"},
@@ -439,17 +439,42 @@
         {c:'scary', t:"СТРАШНА ФИЗИОНОМИЯ! ГРРР! 👹"},
         {c:'wink', t:"НАМИГНИ ХИТРО! 😉"}
     ];
+
     let laughDeck = [];
     let laughInterval;
 
+    // МОЯТ ЗВУК: Генерира кратък "Бийп!" без нужда от аудио файлове
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle'; 
+            osc.frequency.setValueAtTime(600, ctx.currentTime);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15); // Звучи точно 0.15 секунди
+        } catch(e) {}
+    }
+
     laughBtn.onclick = function() {
         if (isPaused) return;
+
         if (!isLaughMode) {
             isLaughMode = true;
             motionScore = 0;
             stage.className = '';
             laughBtn.textContent = "🛑 СТОП СМЯХ";
             cdTimer.style.display = "block";
+            
+            // Зареждаме всички 7 пози и ги разбъркваме
+            laughDeck = [...laughFaces].sort(() => Math.random() - 0.5);
+            
+            // Отключваме звука при самото натискане на бутона
+            playBeep();
+            
             runLaughCycle();
         } else {
             stopLaughCycle();
@@ -459,23 +484,34 @@
     function runLaughCycle() {
         if (!isLaughMode) return;
         
-        if (laughDeck.length === 0) {
-            laughDeck = [...laughFaces].sort(() => Math.random() - 0.5);
-        }
-        const currentFace = laughDeck.pop();
+        // 1. Почистваме стария таймер
+        clearInterval(laughInterval);
         
+        // 2. АВТОМАТИЧНО СПИРАНЕ, ако сме минали и 7-те пози
+        if (laughDeck.length === 0) {
+            stopLaughCycle();
+            return;
+        }
+        
+        // 3. Сменяме физиономията
+        const currentFace = laughDeck.pop();
         blob.className = currentFace.c;
         msg.textContent = currentFace.t;
+
+        // 4. Издаваме краткия звук
+        playBeep();
         
-        let timeLeft = 7;
+        // 5. ТАЙМЕР ЗА 10 СЕКУНДИ
+        let timeLeft = 10;
         cdTimer.textContent = timeLeft;
         
         laughInterval = setInterval(() => {
             timeLeft--;
             cdTimer.textContent = timeLeft;
-            if(timeLeft <= 0) {
+            
+            if (timeLeft <= 0) {
                 clearInterval(laughInterval);
-                runLaughCycle();
+                runLaughCycle(); // Завъртаме към следващата поза
             }
         }, 1000);
     }
@@ -483,10 +519,10 @@
     function stopLaughCycle() {
         clearInterval(laughInterval);
         isLaughMode = false;
-        blob.className = '';
+        blob.className = ''; 
         laughBtn.textContent = "😂 ЙОГА НА СМЕХА";
         cdTimer.style.display = "none";
-        msg.textContent = "Готови ли сме отново за статуи?";
+        msg.textContent = "Край на смеха! Готови ли сме отново за статуи?";
     }
 
     // 7. КОНТРОЛИ
